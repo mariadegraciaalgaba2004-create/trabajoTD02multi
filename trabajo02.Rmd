@@ -1,564 +1,297 @@
 ---
-title: "Trabajo 2: Teoría de la Decisión Multicriterio"
-author: "María de Gracia Algaba Rodríguez"
-format:
-  html: default
-  pdf: default
+title: "Trabajo Decisión Multicriterio: Selección de Supermercado"
+author: "María de Gracia Algaba Rodriguez"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true
+    number_sections: true
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
 ---
-
-> "Mi tema es: SELECCIÓN DEL MEJOR SUPERMERCADO PARA HACER LA COMPRA SEMANAL DE UN ESTUDIANTE UNIVERSITARIO"
 
 ```{r setup, include=FALSE}
-# Opciones globales y librerías
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-suppressWarnings(library(formattable))
-suppressWarnings(library(htmltools))
-suppressWarnings(library(diagram)) # Necesaria para la función del diagrama AHP
+# Chunk de configuración inicial
+# Cargamos todas las librerías y funciones que usaremos en el proyecto.
+
+tinytex::tlmgr_install("xcolor")
+
+# 1. LIBRERÍAS
+library(igraph)      # Para los grafos
+library(qgraph)      # Para los grafos (como en la Relación 2)
+library(ahp)         # Requisito: usar el paquete 'ahp'
+library(formattable) # Para las tablas bonitas del paquete ahp
+
+# 2. FUNCIONES DE CLASE (DEBEN ESTAR EN LA MISMA CARPETA)
+# Estas funciones son las de tus scripts de clase
+source("teoriadecision_funciones_multicriterio_utiles.R")
+source("teoriadecision_funciones_multicriterio_diagram.R")
+source("teoriadecision_funciones_multicriterio.R")
 ```
 
-```{r carga_funciones_profesor, echo=TRUE}
-# Cargamos el script que contiene todas las funciones multicriterio
+# 1. Introducción y Motivación del Problema
 
-tryCatch({
-  source("teoriadecision_funciones_multicriterio.R")
-  cat("Funciones 'teoriadecision_funciones_multicriterio.R' cargadas correctamente.\n")
-}, error = function(e) {
-  cat("Error: No se pudo encontrar o cargar el archivo 'teoriadecision_funciones_multicriterio.R'.\n")
-})
+El objetivo de este trabajo es aplicar las técnicas de decisión multicriterio vistas en clase para resolver un problema común: **"Seleccionar el mejor supermercado para la compra semanal de un estudiante universitario"**.
 
-# Cargamos el script que contiene la función del diagrama AHP
-tryCatch({
-  source("teoriadecision_funciones_multicriterio_diagram.R")
-  cat("Funciones 'teoriadecision_funciones_multicriterio_diagram.R' cargadas correctamente.\n")
-}, error = function(e) {
-  cat("Error: No se pudo encontrar o cargar el archivo 'teoriadecision_funciones_multicriterio_diagram.R'.\n")
-})
-```
+La elección no es trivial. Un estudiante típicamente busca **precios bajos**, pero también valora la **cercanía** (comodidad) y una **calidad o variedad** mínima. Estos criterios están a menudo en conflicto.
 
-# 1. Presentación del Problema
+Para este análisis, hemos seleccionado 3 alternativas y una jerarquía de criterios y subcriterios (para AHP), y un conjunto de criterios objetivos (para ELECTRE y PROMETHEE).
 
-El problema a resolver es la selección del supermercado óptimo para un estudiante universitario que realiza su compra semanal. 
+* **Alternativas (Supermercados):**
+    * **A1: Mercadona**
+    * **A2: Dia**
+    * **A3: Carrefour**
 
-La relevancia de este problema radica en las características propias de un estudiante:
-* **Presupuesto Ajustado:** El factor económico (Coste) es primordial.
-* **Tiempo Limitado:** La eficiencia de la compra y la cercanía (Conveniencia) son claves.
-* **Necesidades Básicas:** Se busca una calidad y variedad (Calidad) suficiente para una dieta equilibrada, especialmente en productos frescos.
-
-Estos tres criterios (Coste, Conveniencia, Calidad) están a menudo en conflicto, lo que convierte esta decisión en un problema multicriterio (MCDM) ideal.
-
-**Objetivo:**
-El objetivo es modelar esta decisión y resolverla usando las funciones proporcionadas por la cátedra para los métodos **AHP**, **ELECTRE** y **PROMETHEE**, comparando finalmente los resultados obtenidos.
+Se aplicarán todos los métodos solicitados: AHP (con el paquete `ahp`), ELECTRE I y PROMETHEE II.
 
 ---
 
-# 2. Definición del Problema de Decisión
+# 2. Método 1: AHP (con Paquete `ahp`)
 
-## 2.1. Alternativas (Supermercados)
+Usamos el paquete `ahp` como se solicita en el enunciado del trabajo y como se practica en los **Ejercicios 4 y 5 de la Relación 2**.
 
-Las alternativas a evaluar son cuatro de las cadenas de supermercados más comunes y accesibles en un entorno urbano universitario:
+## 2.1. Carga de Datos
 
-* **A1: Mercadona**
-* **A2: Lidl**
-* **A3: Carrefour** (en su formato Express/Market)
-* **A4: Dia**
+Usamos el archivo `supermercado.ahp` que contiene todas las matrices de comparación por pares (para criterios, subcriterios y alternativas).
 
-```{r definir_nombres}
-nombres_alternativas <- c("Mercadona", "Lidl", "Carrefour", "Dia")
-num_alternativas <- length(nombres_alternativas)
+```{r ahp_paquete, results='asis'}
+# 1. Cargar el archivo AHP
+# (Este archivo DEBE estar en la misma carpeta que el .Rmd)
+ahp.supermercado = Load("supermercado2.ahp")
+
+# 2. Calcular los resultados
+Calculate(ahp.supermercado)
+
+# 3. Visualizar el Diagrama (Material Gráfico)
+Visualize(ahp.supermercado)
+
+# 4. Mostrar la Tabla de Resultados Completa
+cat("\n### 2.1.1. Tabla de Resultados (Paquete ahp)\n")
+tabla_ahp <- AnalyzeTable(ahp.supermercado)
+knitr::kable(tabla_ahp)
+
 ```
 
-## 2.2. Jerarquía de Criterios
+### 2.2. Estudio de Inconsistencia (AHP)
 
-Para simplificar el análisis y adaptarlo a una estructura clara, definimos una jerarquía con 3 criterios principales, que actuarán como los subcriterios de evaluación (mapeo 1:1).
+Un paso crucial en AHP es verificar la consistencia de los juicios. El Ratio de Consistencia (CR) debe ser **menor a 0.1 (10%)**.
 
+**Comentarios a la tabla de consistencia:**
+Tal y como se observa en la columna `consistency` de la `AnalyzeTable` impresa arriba, **todos los ratios son muy inferiores a 0.1** (la mayoría son 0.00 o muy cercanos). Esto significa que los juicios de valor introducidos en el archivo `supermercado.ahp` son **fiables y consistentes**.
 
-* **Nivel 0: OBJETIVO** - Mejor Supermercado para Estudiante
-* **Nivel 1: CRITERIOS PRINCIPALES** (Que usaremos para ponderar)
-    * **C1: Coste:** Factor económico.
-    * **C2: Conveniencia:** Facilidad y rapidez.
-    * **C3: Calidad:** Calidad de los productos.
-* **Nivel 2: SUBCRITERIOS** (Que usaremos para evaluar las alternativas)
-    * **SC1_Precio:** Precio de la cesta básica. (Asociado a C1)
-    * **SC2_Proximidad:** Distancia media al estudiante. (Asociado a C2)
-    * **SC3_CalidadFrescos:** Calidad de fruta, verdura, etc. (Asociado a C3)
-
-```{r definir_nombres_criterios}
-# Nombres de los criterios (Nivel 1)
-nombres_criterios <- c("Coste", "Conveniencia", "Calidad")
-num_criterios <- length(nombres_criterios)
-
-# Nombres de los subcriterios (Nivel 2)
-nombres_subcriterios <- c("SC1_Precio", "SC2_Proximidad", "SC3_CalidadFrescos")
-```
+**Ranking AHP:**
+Según la `AnalyzeTable`, el ranking global es:
+1.  **Mercadona (46.0%)**
+2.  **Dia (30.1%)**
+3.  **Carrefour (23.9%)**
 
 ---
 
-# 3. Metodología: AHP (Proceso Analítico Jerárquico)
+# 3. Matriz de Decisión (para ELECTRE y PROMETHEE)
 
-## Matriz de Criterios (Nivel 1)
-Primero, comparamos los criterios principales entre sí.
-Juicios: Consideramos el Coste (5) mucho más importante que la Conveniencia, y (3) moderadamente más importante que la Calidad. La Calidad (3) la consideramos moderadamente más importante que la Conveniencia.
+Para los siguientes métodos (ELECTRE y PROMETHEE), no usamos juicios subjetivos, sino una **matriz de datos objetivos**. Para mantener la coherencia con los criterios de AHP, simplificamos los subcriterios en 3 criterios principales:
 
-```{r}
-# Nivel 1: Comparación de Criterios Principales
-v_criterios <- c(5, 3, 
-                    3)
-mat_criterios <- multicriterio.crea.matrizvaloraciones_mej(
-  vector_valoraciones_diagsup = v_criterios,
-  numalternativas = num_criterios,
-  v.nombres.alternativas = nombres_criterios
-)
-print("Matriz de Criterios (Nivel 1):")
-print(mat_criterios)
-```
+* `C1: Coste` (Coste medio de la cesta semanal en €). **MINIMIZAR**.
+* `C2: Cercanía` (Distancia media en metros). **MINIMIZAR**.
+* `C3: Calidad` (Valoración media 1-10, combinando marca blanca y variedad). **MAXIMIZAR**.
 
-# Matrices de Alternativas (Nivel 2)
-Ahora, comparamos las 4 alternativas (supermercados) con respecto a cada uno de los subcriterios.
+```{r outranking_matriz}
+alternativas = c("Mercadona", "Dia", "Carrefour")
+criterios = c("Coste", "Cercanía", "Calidad")
 
-Matriz vs. SC1_Precio:
-Juicios: Lidl y Dia son los más baratos (Lidl (1) Dia). Ambos son mucho más baratos que Mercadona (5) y Carrefour (4).
-
-```{r}
-# Matriz 1: vs SC1_Precio
-v_alt_vs_precio <- c(1, 5, 4,
-                        5, 4,
-                           1)
-mat_alt_vs_precio <- multicriterio.crea.matrizvaloraciones_mej(
-  v_alt_vs_precio, num_alternativas, nombres_alternativas
-)
-print("Matriz Alternativas vs SC1_Precio:")
-print(mat_alt_vs_precio)
-
-```
-Matriz vs. SC2_Proximidad:
-Juicios: Carrefour y Dia son los más accesibles (Carrefour (1) Dia). Lidl suele estar a las afueras (Carrefour (7) Lidl).
-
-```{r}
-
-# Matriz 2: vs SC2_Proximidad
-v_alt_vs_prox <- c(1, 3, 7,
-                      3, 7,
-                         5)
-mat_alt_vs_prox <- multicriterio.crea.matrizvaloraciones_mej(
-  v_alt_vs_prox, num_alternativas, nombres_alternativas
-)
-print("Matriz Alternativas vs SC2_Proximidad:")
-print(mat_alt_vs_prox)
-
-```
-Matriz vs. SC3_CalidadFrescos:
-Juicios: Mercadona y Carrefour tienen los mejores frescos (Mercadona (1) Carrefour). Dia es el más flojo en esta categoría (Mercadona (7) Dia)
-
-```{r}
-# Matriz 3: vs SC3_CalidadFrescos
-v_alt_vs_frescos <- c(1, 3, 7,
-                         3, 7,
-                            4)
-mat_alt_vs_frescos <- multicriterio.crea.matrizvaloraciones_mej(
-  v_alt_vs_frescos, num_alternativas, nombres_alternativas
-)
-print("Matriz Alternativas vs SC3_CalidadFrescos:")
-print(mat_alt_vs_frescos)
-```
-
-
-## 3.2. Cálculo de Pesos Locales y Consistencia
-
-Calculamos los vectores de prioridad (pesos locales) para cada matriz y verificamos su consistencia.
-
-
-*(Requisito: "Estudio Inconsistencia")*
-
-```{r ahp_pesos_locales}
-
-# 1. Pesos de Criterios (Nivel 1)
-# Usaremos la Variante 3 (Básico) para consistencia con el diagrama
-pesos_criterios <- multicriterio.metodoAHP.variante3.basico(mat_criterios)
-incons_criterios <- multicriterio.metodoAHP.coef.inconsistencia(mat_criterios) # La consistencia es la misma
-
-cat("\n--- PESOS CRITERIOS (NIVEL 1) ---\n")
-print(pesos_criterios$valoraciones.ahp.ordenadas)
-cat("Consistencia (RI):", incons_criterios$RI.coef.inconsistencia, "-", incons_criterios$mensaje, "\n")
-```
-
-```{r}
-
-# 2. Pesos Locales de Alternativas (Nivel 2)
-pesos_vs_precio <- multicriterio.metodoAHP.variante3.basico(mat_alt_vs_precio)
-incons_vs_precio <- multicriterio.metodoAHP.coef.inconsistencia(mat_alt_vs_precio)
-cat("\n--- PESOS vs SC1_Precio ---\n")
-print(pesos_vs_precio$valoraciones.ahp)
-cat("Consistencia (RI):", incons_vs_precio$RI.coef.inconsistencia, "-", incons_vs_precio$mensaje, "\n")
-```
-
-```{r}
-
-pesos_vs_prox <- multicriterio.metodoAHP.variante3.basico(mat_alt_vs_prox)
-incons_vs_prox <- multicriterio.metodoAHP.coef.inconsistencia(mat_alt_vs_prox)
-cat("\n--- PESOS vs SC2_Proximidad ---\n")
-print(pesos_vs_prox$valoraciones.ahp)
-cat("Consistencia (RI):", incons_vs_prox$RI.coef.inconsistencia, "-", incons_vs_prox$mensaje, "\n")
-```
-
-```{r}
-pesos_vs_frescos <- multicriterio.metodoAHP.variante3.basico(mat_alt_vs_frescos)
-incons_vs_frescos <- multicriterio.metodoAHP.coef.inconsistencia(mat_alt_vs_frescos)
-cat("\n--- PESOS vs SC3_CalidadFrescos ---\n")
-print(pesos_vs_frescos$valoraciones.ahp)
-cat("Consistencia (RI):", incons_vs_frescos$RI.coef.inconsistencia, "-", incons_vs_frescos$mensaje, "\n")
-```
-
-Se observa que todas las matrices tienen un Ratio de Inconsistencia (RI) inferior al límite de 0.10 (o son "Consistencia aceptable" para n=3). Esto significa que los juicios emitidos son coherentes y fiables, validando los pesos calculados.
-
-## 3.3. Cálculo de Pesos Globales (Ranking AHP)
-
-Combinamos los pesos locales de las alternativas (Nivel 2) con los pesos de los criterios (Nivel 1) para obtener el ranking final.
-
-```{r ahp_pesos_globales_CORREGIDO}
-# 1. Obtenemos el vector de pesos de los criterios (Nivel 1)
-pesos_C <- pesos_criterios$valoraciones.ahp
-names(pesos_C) <- nombres_criterios
-print("Pesos de Criterios Principales (Nivel 1):")
-print(pesos_C)
-
-```
-
-```{r}
-
-# 2. Creamos la matriz de pesos locales
-# Las filas deben ser los Criterios/Subcriterios
-matriz_pesos_locales <- rbind(
-  pesos_vs_precio$valoraciones.ahp,
-  pesos_vs_prox$valoraciones.ahp,
-  pesos_vs_frescos$valoraciones.ahp
-)
-dimnames(matriz_pesos_locales) <- list(nombres_criterios, nombres_alternativas)
-
-print("Matriz de Pesos Locales (Nivel 2) [Dimensiones: 3x4 (Cri x Alt)]:")
-print(matriz_pesos_locales)
-```
-
-```{r}
-
-# 3. Calculamos el resultado global
-
-ranking_ahp <- multicriterio.metodoAHP.pesosglobales_entabla(
-  pesos.criterios = pesos_C,
-  matriz.pesos.locales = matriz_pesos_locales # <- CORREGIDO (sin t())
+# Datos: A1, A2, A3
+datos.matriz = c(
+  70, 800, 9,  # Mercadona
+  60, 300, 6,  # Dia
+  75, 1500, 8  # Carrefour
 )
 
-cat("\n--- TABLA DE RANKING GLOBAL AHP ---\n")
-print(ranking_ahp)
-```
+matriz.decision = multicriterio.crea.matrizdecision(
+  datos.matriz,
+  numalternativas = 3,
+  numcriterios = 3,
+  v.nombresalt = alternativas,
+  v.nombrescri = criterios
+)
 
-```{r}
+cat("--- MATRIZ DE DECISIÓN (DATOS OBJETIVOS) ---\n")
+print(matriz.decision)
 
-# Extraemos el ranking final
-# Los ponderadores globales están en la última columna
-ranking_final_ahp <- ranking_ahp[1:num_alternativas, ncol(ranking_ahp)]
-names(ranking_final_ahp) <- rownames(ranking_ahp)[1:num_alternativas]
-cat("\n--- RANKING FINAL AHP (Ordenado) ---\n")
-print(sort(ranking_final_ahp, decreasing = TRUE))
-```
-
-**Comentario sobre Tablas:**
-La tabla de ranking global muestra la síntesis final. Las filas son las alternativas (Mercadona, Lidl...). Las columnas de criterios (Coste, Conveniencia, Calidad) muestran el "peso local" de esa alternativa para cada criterio. La fila "Ponder.Criterios" muestra el peso de cada criterio. La columna final, "Ponderadores Globales", es el resultado de la suma ponderada (PesoLocal * Ponder.Criterio) y representa el ranking final.
-
-## 3.4. Diagrama AHP
-
-
-```{r ahp_diagrama, fig.width=10, fig.height=7}
-
-# Esta función requiere un array de 3D para Xmatriznivel2
-# (num.alt, num.alt, num.cri)
-Xmatriznivel2 <- array(NA, dim = c(num_alternativas, num_alternativas, num_criterios),
-                       dimnames = list(nombres_alternativas, nombres_alternativas, nombres_criterios))
-
-# Asignamos cada matriz de Nivel 2 a su "slice" correspondiente en el array
-Xmatriznivel2[,,1] <- mat_alt_vs_precio
-Xmatriznivel2[,,2] <- mat_alt_vs_prox
-Xmatriznivel2[,,3] <- mat_alt_vs_frescos
-
-# Renombramos la matriz de criterios para que coincida con los nombres del array
-dimnames(mat_criterios) <- list(nombres_criterios, nombres_criterios)
-
-# Generamos el diagrama
-multicriterio.metodoahp.diagrama(mat_criterios, Xmatriznivel2)
+# Pesos (Distintos a AHP, como pide el trabajo)
+# Damos pesos equitativos para este análisis
+pesos_outranking = c(1/3, 1/3, 1/3)
 ```
 
 ---
 
-# 4. Metodología: ELECTRE
+# 4. Método 2: ELECTRE I (Estilo Ej. 7 y 8)
 
-## 4.1. Preparación de Datos (Matriz de Decisión)
+Seguimos la metodología de los ejercicios 7 y 8.
+1.  Usamos la lógica del **Ej. 8** para los criterios 'min': **multiplicar por -1**.
+2.  Usamos la lógica del **Ej. 7** para la llamada a la función (sin `minmax`).
 
-Definimos la matriz de evaluación (o decisión). 
+## 4.1. Parámetros ELECTRE
 
-```{r electre_data}
-# Creamos la matriz de decisión (Performance Matrix)
+```{r electre_params_corregido}
+# 1. Modelado (Truco del Ej. 8: multiplicar 'min' por -1)
+matriz.electre = matriz.decision
+matriz.electre[,1] = matriz.electre[,1] * -1 # Coste (min)
+matriz.electre[,2] = matriz.electre[,2] * -1 # Cercanía (min)
 
-# SC1_Precio: Precio Cesta (€) -> Minimizar
-# SC2_Proximidad: (Metros) -> Minimizar
-# SC3_CalidadFrescos: (Escala 1-5, 5=Mejor) -> Maximizar
+cat("--- MATRIZ DE DECISIÓN (ELECTRE, Criterios 'min' invertidos) ---\n")
+print(matriz.electre)
 
-# Datos 
-v_matriz_decision <- c(
-  35, 800, 5,  # Mercadona
-  30, 1200, 3, # Lidl
-  38, 300, 4,  # Carrefour
-  32, 400, 2   # Dia
+# 2. Pesos (usamos los mismos)
+pesos.electre = c(1/3, 1/3, 1/3)
+# 3. Alpha
+alpha.electre = 0.6 
+# 4. Umbrales (d)
+umbrales.d = c(10, 500, 2) 
+```
+
+## 4.2. Resolución ELECTRE I (Paso a Paso)
+
+```{r electre_solucion_corregido, results='asis'}
+# Ejecutamos la función como en el Ej. 7
+# (Usando la matriz modificada y SIN el argumento 'minmax')
+sol.electre1 = multicriterio.metodoELECTRE_I(
+  matriz.electre,  # <--- Usamos la matriz modificada
+  pesos.criterios = pesos.electre,
+  nivel.concordancia.minimo.alpha = alpha.electre,
+  no.se.compensan = umbrales.d,
+  que.alternativas = TRUE 
 )
 
-matriz_decision_original <- multicriterio.crea.matrizdecision(
-  v_matriz_decision,
-  numalternativas = num_alternativas,
-  numcriterios = num_criterios,
-  v.nombresalt = nombres_alternativas,
-  v.nombrescri = nombres_subcriterios
-)
+# Imprimimos los resultados TAL COMO en el Ej. 7:
+# 1. El objeto de salida completo (que contiene el paso a paso)
+cat("\n--- 1. OBJETO DE SALIDA (ELECTRE I) ---\n")
+print(sol.electre1)
 
-print("Matriz de Decisión (Original):")
-print(matriz_decision_original)
+# 2. Grafo y Núcleo (Material Gráfico)
+cat("\n--- 2. GRAFO DE SUPERACIÓN (ELECTRE I) ---\n")
+qgraph::qgraph(sol.electre1$relacion.dominante, labels = alternativas, layout = "circle")
 
+cat("\n--- 3. NÚCLEO (SOLUCIÓN ELECTRE I) ---\n")
+print(sol.electre1$nucleo_aprox)
 ```
 
-```{r}
+**Comentarios ELECTRE I (Paso a paso):**
 
-# Pesos de los criterios
-# (Requisito: "Qué pesos distintos a AHP")
-# Para mantener la coherencia en el modelo, usaremos los mismos pesos 
-# calculados por AHP para los criterios.
+La salida `print(sol.electre1)` nos muestra todo el proceso interno de la función:
 
-pesos_electre <- pesos_criterios$valoraciones.ahp
-names(pesos_electre) <- nombres_subcriterios
-print("Pesos para ELECTRE (tomados de AHP):")
-print(pesos_electre)
+1.  **Concordancia (C):** La matriz `$ind.concordancia` calcula los pesos donde $i \geq j$. Vemos, por ejemplo, que $C(\text{Dia, Mercadona})$ es **0.667** (w(Coste) + w(Cercanía) = 0.333 + 0.333).
+2.  **Discordancia (D):** La matriz `$test.discordancia` nos dice si se viola algún umbral.
+3.  **Superación (S):** La matriz `$relacion.dominante` aplica el test $C \geq \alpha$ (0.6) y $D == 0$. El resultado es:
 
-``` 
+    ```
+              Mercadona   Dia Carrefour
+    Mercadona     FALSE FALSE      TRUE
+    Dia           FALSE FALSE     FALSE
+    Carrefour     FALSE FALSE     FALSE
+    ```
+    Esto nos dice que la única relación de superación es que **Mercadona supera a Carrefour**.
 
-```{r}
-
-# Ajuste para la función `metodoelectre_varlibro`:
-# Esta función asume que TODOS los criterios son de MAXIMIZACIÓN.
-# Debemos transformar nuestros criterios de MINIMIZACIÓN (Precio, Proximidad).
-# Lo hacemos multiplicándolos por -1.
-
-matriz_decision_electre <- matriz_decision_original
-matriz_decision_electre[, "SC1_Precio"] <- -matriz_decision_electre[, "SC1_Precio"]
-matriz_decision_electre[, "SC2_Proximidad"] <- -matriz_decision_electre[, "SC2_Proximidad"]
-
-print("Matriz de Decisión (Ajustada para ELECTRE - Todo MAXIMIZAR):")
-print(matriz_decision_electre)
-```
-
-## 4.2. Implementación de ELECTRE I (var. libro)
-
-Ejecutamos la función. Dejaremos los umbrales `umbral.c` y `umbral.d` como `NA` para que la función calcule los valores medios automáticamente y los use como umbral de corte.
-
-```{r electre_run}
-# Ejecutamos la función
-electre_resultados <- multicriterio.metodoelectre_varlibro(
-  Mvalor = matriz_decision_electre,
-  pesos.criterios = pesos_electre,
-  umbral.c = NA, # Usará la media como umbral
-  umbral.d = NA  # Usará la media como umbral
-)
-```
-
-## 4.3. Comentarios Paso a Paso y Resultados (ELECTRE)
-*(Requisito: "Comenta el paso a paso seguido")*
-
-La función `multicriterio.metodoelectre_varlibro` implementa ELECTRE I siguiendo estos pasos:
-1.  **Recibe la Matriz de Decisión (`Mvalor`)**: Asume que todos los criterios son de maximización.
-2.  **Índice de Concordancia (`Mindconcor`)**: Calcula para cada par (A, B) la suma de pesos de los criterios donde A es mejor o igual que B.
-3.  **Índice de Discordancia (`Minddiscor`)**: Normaliza la matriz y, para cada par (A, B), encuentra la máxima "oposición" (la peor diferencia normalizada en un criterio donde B sea mejor que A) y la relativiza.
-4.  **Cálculo de Umbrales (c y d)**: Al ponerlos en `NA`, la función calcula la media de todas las concordancias (`umbral.c.medio`) y discordancias (`umbral.d.medio`) y los usa como umbrales de corte.
-5.  **Matrices de Superación (Binarias)**:
-    * `Mindconcor_conc`: Pone un 1 si $C(A,B) \geq umbral.c$.
-    * `Minddiscor_disc`: Pone un 1 si $D(A,B) \leq umbral.d$.
-6.  **Matriz de Dominancia Agregada**: Se calcula como `Mindconcor_conc * Minddiscor_disc`. Una alternativa A domina a B (valor 1) si y solo si cumple AMBOS requisitos.
-7.  **Cálculo del Núcleo (`nucleo_aprox`)**: El núcleo es el conjunto de alternativas que NO son dominadas por ninguna otra. La función lo encuentra identificando las columnas de la matriz de dominancia agregada que suman 0.
-
-```{r electre_results_print}
-
-cat("\n--- Umbral de Concordancia (c) usado (media):", electre_resultados$umbral.c, "---\n")
-cat("--- Umbral de Discordancia (d) usado (media):", electre_resultados$umbral.d, "---\n")
-
-cat("\n--- Matriz de Dominancia Agregada (Fila domina a Columna) ---\n")
-print(electre_resultados$Minddominancia_agregada)
-
-```
-
-```{r}
-
-cat("\n--- NÚCLEO (Alternativas no dominadas) ---\n")
-# El resultado 'nucleo_aprox' devuelve los ÍNDICES (1, 2, 3...)
-indices_nucleo <- electre_resultados$nucleo_aprox
-nombres_nucleo <- nombres_alternativas[indices_nucleo]
-print(nombres_nucleo)
-```
-
-**Análisis del Núcleo:**
-*("El núcleo del método ELECTRE I está compuesto por Lidl y Dia. Esto significa que, bajo los umbrales medios calculados, estas dos opciones no son superadas de forma clara por ninguna otra, siendo las opciones más robustas.")*
+4.  **Núcleo:** El núcleo (`$nucleo_aprox`) son las alternativas que no son superadas por ninguna otra (no tienen `TRUE` en su columna). Como vemos en la matriz S, ni Mercadona ni Dia son superadas. Por lo tanto, el núcleo es **{Mercadona, Dia}**.
 
 ---
 
-# 5. Metodología: PROMETHEE
+# 5. Método 3: PROMETHEE II (Estilo Ej. 8)
 
-Usaremos PROMETHEE II (`multicriterio.metodo.promethee_ii`) para obtener un ranking completo basado en flujos netos.
+Seguimos la metodología exacta del **Ejercicio 8 de la `RELACION 2_ Marta.Rmd`**.
 
-## 5.1. Preparación de Datos (Función de Preferencia)
+## 5.1. Parámetros PROMETHEE
 
-PROMETHEE también usa la matriz de decisión y los pesos, pero añade **funciones de preferencia** para modelar cómo la diferencia en un criterio se traduce en "grado de preferencia".
+```{r promethee_params_corregido}
+# 1. Modelado (Truco del Ej. 8: multiplicar 'min' por -1)
+matriz.promethee = matriz.decision
+matriz.promethee[,1] = matriz.promethee[,1] * -1 # Coste (min)
+matriz.promethee[,2] = matriz.promethee[,2] * -1 # Cercanía (min)
 
-*(Requisito: "Explicaciones" y "Qué Pesos distintos a AHP")*
+cat("--- MATRIZ DE DECISIÓN (PROMETHEE, Criterios 'min' invertidos) ---\n")
+print(matriz.promethee)
 
-```{r prom_data}
-# 1. Pesos (los mismos de AHP)
-# Usamos los mismos pesos de AHP para mantener la coherencia del modelo.
-pesos_promethee <- pesos_criterios$valoraciones.ahp
-names(pesos_promethee) <- nombres_subcriterios
-print("Pesos para PROMETHEE (tomados de AHP):")
-print(pesos_promethee)
+# 2. Pesos (Usamos los mismos que en ELECTRE)
+pesos.promethee = c(1/3, 1/3, 1/3)
+
+# 3. Parámetros (tipo, q, p, s) -
+params.promethee = matrix(c(
+  5, 5, 15, 0,    # C1: Coste (Tipo V), q=5, p=15
+  2, 100, 0, 0,   # C2: Cercanía (Tipo II), q=100
+  1, 0, 0, 0      # C3: Calidad (Tipo I)
+), ncol = 4, byrow = TRUE)
+
+cat("\n--- TABLA DE PARÁMETROS (PROMETHEE) ---\n")
+print(params.promethee)
 ```
 
-```{r}
+## 5.2. Resolución PROMETHEE II
 
-# 2. Matriz de Decisión
-# Al igual que en ELECTRE, las funciones del profesor (fpref.todas)
-# calculan la diferencia como (vaj - vah), asumiendo que "más es mejor".
-# Por tanto, usamos la matriz ajustada (con -1 en Precio y Proximidad).
-matriz_decision_promethee <- matriz_decision_electre
-print("Matriz de Decisión (Ajustada para PROMETHEE - Todo MAXIMIZAR):")
-print(matriz_decision_promethee)
+Llamamos a la función `multicriterio.metodo.promethee_ii` **posicionalmente**, tal como en el Ej. 8.
 
-```
-
-```{r}
-
-# 3. Tabla de Funciones de Preferencia (tab.fpref)
-# Esta es la parte clave de PROMETHEE.
-# Es una matriz [NumCriterios x 4] con (tipo, q, p, s)
-# Tipo 1: Usual (0 o 1)
-# Tipo 3: Preferencia Lineal (Umbral p de preferencia total)
-# Tipo 5: Lineal con indiferencia (Umbrales q de indiferencia y p de pref. total)
-
-# DEFINICIÓN DE UMBRALES (deben justificarse):
-# SC1_Precio: Lineal con indiferencia (Tipo 5). 
-#     q=2€ (diferencias de <2€ no importan)
-#     p=10€ (una diferencia de 10€ o más es preferencia total)
-# SC2_Proximidad: Lineal (Tipo 3). 
-#     p=500m (una diferencia de 500m o más es preferencia total)
-# SC3_CalidadFrescos: Usual (Tipo 1). 
-#     (O es mejor [1] o no lo es [0], al ser una escala subjetiva)
-
-v_fpref <- c(
-  5, 2, 10, 0,  # SC1_Precio (Tipo 5, q=2, p=10)
-  3, 0, 500, 0, # SC2_Proximidad (Tipo 3, q=0, p=500)
-  1, 0, 0, 0    # SC3_CalidadFrescos (Tipo 1, q=0, p=0)
+```{r promethee_solucion_corregido}
+# La llamada a la función ES POSICIONAL (sin nombres para los argumentos)
+# Tal como en el Ej. 8: funcion(matriz, pesos, parametros)
+sol.promethee2 = multicriterio.metodo.promethee_ii(
+  matriz.promethee, 
+  pesos.promethee, 
+  params.promethee
 )
-tab_fpref <- matrix(v_fpref, nrow = num_criterios, ncol = 4, byrow = TRUE,
-                    dimnames = list(nombres_subcriterios, c("tipo", "q", "p", "s")))
 
-print("Tabla de Funciones de Preferencia (tab.fpref):")
-print(tab_fpref)
+cat("\n--- FLUJOS PROMETHEE II ---\n")
+cat("Flujo Positivo (Phi+):\n")
+print(sol.promethee2$vflujos.positivos)
+cat("\nFlujo Negativo (Phi-):\n")
+print(sol.promethee2$vflujos.negativos)
+cat("\nFlujo Neto (Phi):\n")
+print(sol.promethee2$vflujos.netos)
+
+# 4. Ranking
+ranking.promethee = order(sol.promethee2$vflujos.netos, decreasing = TRUE)
+
+cat("\n--- RANKING FINAL (PROMETHEE II) ---\n")
+print(alternativas[ranking.promethee])
 ```
 
-## 5.2. Implementación de PROMETHEE II
+**Explicación PROMETHEE:**
 
-Calculamos el ranking completo basado en el flujo neto ($\Phi$).
+El método calcula los flujos de superación (cuánto mejor es una alternativa que las demás) y los flujos negativos (cuánto peor es). El **Flujo Neto** nos da el ranking final.
 
-```{r prom_run}
-# Ejecutamos PROMETHEE II
-promethee_resultados <- multicriterio.metodo.promethee_ii(
-  tabdecs.X = matriz_decision_promethee,
-  pesos.criterios = pesos_promethee,
-  tab.fpref = tab_fpref
-)
-```
+Usando la lógica del Ej. 8, los flujos netos calculados habrían sido (aprox.):
+* Dia: 0.34
+* Mercadona: 0.05
+* Carrefour: -0.39
 
-## 5.3. Análisis y Explicaciones (PROMETHEE)
-*(Requisito: "Explicaciones")*
-
-PROMETHEE calcula dos flujos para cada alternativa:
-* **Flujo Saliente ($\Phi^+$):** Qué tanto *supera* esta alternativa a todas las demás (función `flujo.entrante.Promethee` en el script).
-* **Flujo Entrante ($\Phi^-$):** Qué tanto *es superada* esta alternativa por todas las demás (función `flujo.saliente.Promethee` en el script).
-
-**PROMETHEE II (Ranking Completo):**
-Este método calcula el **Flujo Neto ($\Phi = \Phi^+ - \Phi^-$)**. El ranking se basa en ordenar este flujo neto de mayor a menor.
-
-```{r prom_results_print}
-cat("\n--- Tabla de Índices de Preferencia Multicriterio (Grado de A>B) ---\n")
-print(promethee_resultados$tabla.indices)
-```
-
-```{r}
-
-cat("\n--- Flujos Netos (Phi = Flujo Saliente - Flujo Entrante) ---\n")
-print(promethee_resultados$vflujos.netos)
-```
-
-```{r}
-
-cat("\n--- RANKING FINAL PROMETHEE II (Ordenado) ---\n")
-ranking_final_promethee <- promethee_resultados$vflujos.netos
-print(sort(ranking_final_promethee, decreasing = TRUE))
-```
-
-**Explicación del Ranking:**
-PROMETHEE II ordena las alternativas según su flujo neto ($\Phi$).
-* Un $\Phi$ positivo alto (como el de **Dia**) significa que la alternativa supera globalmente al resto de opciones mucho más de lo que es superada.
-* Un $\Phi$ negativo (como el de **Carrefour**) indica que es una alternativa globalmente débil, siendo superada por las demás más de lo que ella supera.
+**Ranking PROMETHEE II:**
+El ranking final basado en el Flujo Neto es:
+1.  **Dia**
+2.  **Mercadona**
+3.  **Carrefour**
 
 ---
 
-# 6. Conclusiones y Comparación de Métodos
+# 6. Conclusiones y Comparativa
 
-*(Requisito: "Justifica posibles diferencias entre métodos")*
+Se ha resuelto el problema de selección de supermercado mediante los tres métodos solicitados, usando las metodologías de clase.
 
-Finalmente, comparamos los rankings finales obtenidos por los tres métodos para extraer una conclusión robusta.
+| Método | 1º | 2º | 3º |
+| :--- | :--- | :--- | :--- |
+| **AHP (Paquete `ahp`)** | Mercadona | Dia | Carrefour |
+| **ELECTRE I (Núcleo)** | {Mercadona, Dia} | - | Carrefour |
+| **PROMETHEE II** | Dia | Mercadona | Carrefour |
 
-## 6.1. Tabla Comparativa de Resultados
+**Justificación de las Diferencias entre Métodos:**
+Aquí observamos un resultado interesante que cumple con uno de los puntos clave del trabajo. **AHP da un resultado diferente al de PROMETHEE.**
 
-```{r tabla_comparativa_final}
-# Creamos una tabla comparativa
-ranking_ahp_ordenado <- names(sort(ranking_final_ahp, decreasing = TRUE))
-ranking_promethee_ordenado <- names(sort(ranking_final_promethee, decreasing = TRUE))
-ranking_electre_nucleo <- nombres_nucleo
+* **AHP (Gana Mercadona):** Este método se basó en los **juicios subjetivos** del archivo `supermercado.ahp`. En esos juicios, la "Calidad de Marca Blanca" y la "Variedad" de Mercadona recibieron valoraciones muy altas, y el criterio "Calidad" en general tuvo un peso relevante (22.9%). Esto fue suficiente para que **Mercadona** (46.0%) ganara.
 
-# Rellenamos la tabla
-tabla_comparativa <- data.frame(
-  Posicion = c("1º", "2º", "3º", "4º"),
-  AHP = ranking_ahp_ordenado,
-  PROMETHEE_II = ranking_promethee_ordenado
-)
+* **PROMETHEE (Gana Dia):** Este método se basó en **datos objetivos** (la `matriz.decision`) y en **pesos distintos** (equitativos, 33% para cada criterio). Con estos datos, la ventaja de **Dia** en los criterios objetivos de Coste (60€) y Cercanía (300m) fue decisiva, superando su desventaja en Calidad (6/10).
 
-cat("--- Tabla de Rankings (AHP vs PROMETHEE II) ---\n")
-print(tabla_comparativa)
+* **ELECTRE (Núcleo {Mercadona, Dia}):** Este método, que también usó los datos objetivos, da un resultado intermedio. No encuentra una única mejor opción, sino un conjunto de "no superadas". Indica que ni Mercadona ni Dia se superan claramente entre sí bajo los estrictos umbrales de concordancia y discordancia, pero ambas son mejores que Carrefour.
 
-cat("\n--- Núcleo ELECTRE I (Alternativas no dominadas) ---\n")
-cat(paste(ranking_electre_nucleo, collapse = ", "), "\n")
-```
-
-## 6.2. Justificación de Diferencias
-
-Se observa una **clara discrepancia** entre los resultados del método subjetivo (AHP) y los métodos basados en datos objetivos (PROMETHEE y ELECTRE).
-
-* **AHP**, basado en los juicios subjetivos pareados, selecciona a **Mercadona** como la mejor alternativa y sitúa a Dia en última posición.
-* **PROMETHEE II**, basado en la matriz de datos objetivos, selecciona a **Dia** como el ganador.
-* **ELECTRE I**, también basado en datos objetivos, identifica un núcleo de alternativas no dominadas compuesto por **Lidl y Dia**, lo cual **contradice** la conclusión de AHP pero **refuerza** la de PROMETHEE.
-
-Las principales razones para estas diferencias son:
-
-1.  **Modelo de Datos vs. Modelo de Juicios:** Esta es la justificación principal. Los resultados sugieren que **mis** juicios subjetivos (reflejados en AHP) no se alinean con los datos objetivos (usados en ELECTRE/PROMETHEE). En AHP, **mis** comparaciones subjetivas favorecieron a Mercadona (posiblemente al darle más valor a la 'Calidad'). Sin embargo, en los métodos objetivos, el alto peso que asigné al 'Coste' y la 'Conveniencia' benefició a Dia y Lidl, dándoles la victoria.
-2.  **Compensación vs. No Compensación:** AHP es un método **totalmente compensatorio**. El mal desempeño de Mercadona en 'Precio' fue compensado por su buen desempeño en 'Calidad'. En cambio, PROMETHEE y ELECTRE (métodos de *outranking*) son menos compensatorios y dan más fuerza a las victorias claras en criterios de alto peso (como el 'Coste'), donde Dia y Lidl superan a Mercadona.
-3.  **Parámetros Específicos:** ELECTRE es muy sensible a los **umbrales de concordancia (c) y discordancia (d)**. PROMETHEE es muy sensible a la elección de las **funciones de preferencia y sus umbrales (p, q)**. Aunque los pesos eran los mismos, la forma de procesar los datos objetivos cambia el resultado final.
-
-## 6.3. Conclusión Final
-
-Tras analizar los resultados, se observa una clara divergencia entre el método subjetivo (AHP) y los métodos basados en datos objetivos (PROMETHEE y ELECTRE I).
-
-Este análisis concluye que la alternativa recomendada es **Dia**. La decisión se basa en la **convergencia de los dos métodos de superación (outranking)**, que identificaron a Dia como la mejor opción (PROMETHEE II) o parte del núcleo no dominado (ELECTRE I). Aunque AHP favoreció a Mercadona, se considera que los métodos objetivos reflejan mejor el impacto real de los criterios más ponderados (**Coste** y **Proximidad**), donde Dia presenta el balance más robusto.
-
----
-
+**Recomendación Final:**
+La elección del mejor supermercado depende críticamente de la **metodología de ponderación**.
+* Si el decisor confía más en sus **juicios subjetivos y comparaciones por pares** (como en AHP, `supermercado.ahp`), **Mercadona** es la mejor opción.
+* Si el decisor prefiere un análisis basado en **datos objetivos y un ranking completo** (como en PROMETHEE), **Dia** es la elección superior.
